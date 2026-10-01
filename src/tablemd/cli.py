@@ -253,11 +253,14 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
 
 
 def _configure_stdout(encoding: str) -> None:
-    """When stdout is a pipe or file, emit UTF-8 (or --encoding) instead of the locale's codec.
+    """When stdout is a pipe or file, emit UTF-8 (or --encoding) with ``\n`` line endings.
 
     Interactive consoles are left alone: Python already handles Unicode there
-    (on Windows through the UTF-16 console API), while a redirected stdout on
-    a cp950/cp1252 system would otherwise crash on the first CJK character.
+    (on Windows through the UTF-16 console API). A redirected stdout, however,
+    would otherwise use the locale codec (crashing on the first CJK character
+    on a cp950/cp1252 system) and, on Windows, translate ``\n`` to ``\r\n``.
+    Fixing both makes ``tablemd x.md > out.csv`` byte-identical to
+    ``tablemd x.md -o out.csv`` on every platform.
     """
     stream = sys.stdout
     try:
@@ -265,7 +268,7 @@ def _configure_stdout(encoding: str) -> None:
             return
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
-            reconfigure(encoding=encoding, errors="replace")
+            reconfigure(encoding=encoding, errors="replace", newline="\n")
     except (AttributeError, ValueError, OSError):  # pragma: no cover - exotic streams
         pass
 

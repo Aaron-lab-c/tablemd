@@ -215,6 +215,9 @@ def test_piped_stdout_is_utf8_even_under_legacy_locale(md_file, tmp_path):
     assert res.stdout.decode("utf-8") == "產品,數量\n香蕉,1\n"
     res = subprocess.run([sys.executable, "-m", "tablemd", str(cjk), "--encoding", "utf-16"], capture_output=True, env=env)
     assert res.stdout.decode("utf-16") == "產品,數量\n香蕉,1\n"
+    # A CJK path inside an *error message* must not crash on a legacy-locale stderr either.
+    res = subprocess.run([sys.executable, "-m", "tablemd", str(tmp_path / "不存在.md")], capture_output=True, env=env)
+    assert res.returncode == 1 and res.stderr.startswith(b"tablemd: error: file not found")
 
 
 def test_no_input_on_tty(monkeypatch):
